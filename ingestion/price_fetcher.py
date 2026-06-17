@@ -68,6 +68,8 @@ def upsert_prices(supabase, rows):
     Upsert rows into price_history.
     UNIQUE(ticker, date) constraint means re-runs update instead of duplicating.
     """
+    if not rows: # skip empty results market holidays return no data from Polygon
+        return
     supabase.table('price_history').upsert(rows, on_conflict='ticker,date').execute()
 
 
