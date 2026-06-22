@@ -1,0 +1,21 @@
+version: 2
+
+models:
+  - name: portfolio_positions
+    description: "One row per portfolio lot with current price and P&L"
+    columns:
+      - name: ticker
+        tests: [not_null]
+      - name: cost_basis
+        tests: [not_null]
+      - name: current_value
+        tests: [not_null]
+
+  - name: portfolio_summary
+    description: "Portfolio-level rollup: total value, P&L, position count"
+
+  - name: portfolio_sector_exposure
+    description: "Current value and % allocation by sector"
+
+  - name: portfolio_vs_spy
+    description: "Daily portfolio return vs SPY benchmark with alpha calculation"
