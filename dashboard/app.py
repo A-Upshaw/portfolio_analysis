@@ -5,6 +5,7 @@ import plotly.express as px
 import pandas as pd
 from dotenv import load_dotenv
 from supabase import create_client
+import requests
 
 # allows importing from analysis/
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -12,7 +13,7 @@ from analysis.portfolio_analyzer import analyze
 
 load_dotenv()
 
-supabase = create_client(os.environ["SUPABASE_URL"], os.environ["SUPABASE_KEY"])
+# supabase = create_client(os.environ["SUPABASE_URL"], os.environ["SUPABASE_KEY"])
 
 st.set_page_config(page_title="AI Portfolio Analyst", layout="wide")
 
@@ -35,31 +36,31 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 st.title("AI Portfolio Analyst")
-st.markdown("#### Claude-powered natural language portfolio analysis. Ask anything, get grounded answers.")
+st.markdown("#### Claude-powered portfolio analysis.")
 st.markdown("---")
 
 @st.cache_data(ttl=300)
 def load_summary():
-    return supabase.table("portfolio_summary").select("*").execute().data[0]
+    return requests.get("http://localhost:8000/portfolio/summary").json()
 
 @st.cache_data(ttl=300)
 def load_positions():
-    return supabase.table("portfolio_positions").select("*").execute().data
+    return requests.get("http://localhost:8000/portfolio/positions").json()
 
 @st.cache_data(ttl=300)
 def load_sector_exposure():
-    return supabase.table("portfolio_sector_exposure").select("*").execute().data
+    return requests.get("http://localhost:8000/portfolio/sector").json()
 
 @st.cache_data(ttl=300)
 def load_vs_spy():
-    return supabase.table("portfolio_vs_spy").select("*").execute().data
+    return requests.get("http://localhost:8000/portfolio/spy").json()
 
 summary = load_summary()
 positions = pd.DataFrame(load_positions())
 sectors = pd.DataFrame(load_sector_exposure())
 vs_spy = pd.DataFrame(load_vs_spy())
 
-tab1, tab2, tab3, tab4, tab5 = st.tabs(["My Portfolio", "Positions", "Market Movers", "News", "Economic Indicators"])
+tab1, tab2, tab3, tab4, tab5 = st.tabs(["Portfolio Summary", "Positions", "Market Movers", "News", "Economic Indicators"])
 
 # ── Tab 1: My Portfolio ───────────────────────────────────────────────────────
 with tab1:
