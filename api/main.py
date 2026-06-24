@@ -23,3 +23,9 @@ def get_positions():
 def get_sector():
     result = supabase.table("portfolio_sector_exposure").select("*").execute()
     return result.data
+
+@app.get("/portfolio/spy")
+def get_spy():
+    result = supabase.table("portfolio_vs_spy").select("*").execute()
+    return result.data
+    
