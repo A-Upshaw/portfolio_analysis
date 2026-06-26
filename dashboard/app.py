@@ -14,7 +14,7 @@ load_dotenv()
 
 supabase = create_client(os.environ["SUPABASE_URL"], os.environ["SUPABASE_KEY"])
 
-st.set_page_config(page_title="AI Portfolio Analyst", layout="wide")
+st.set_page_config(page_title="Portfolio OS", layout="wide")
 
 st.markdown("""
 <style>
@@ -105,7 +105,12 @@ sectors   = pd.DataFrame(load_sector_exposure())
 vs_spy    = pd.DataFrame(load_vs_spy())
 
 # Header
-st.title("AI Portfolio Analyst")
+st.markdown("""
+<div style="padding: 8px 0 4px 0;">
+    <span style="font-family:'Inter',sans-serif; font-size:2rem; font-weight:800; color:#1a1f2e; letter-spacing:-0.03em;">Portfolio</span>
+    <span style="font-family:'Inter',sans-serif; font-size:2rem; font-weight:300; color:#4c9be8; letter-spacing:-0.03em;"> OS</span>
+</div>
+""", unsafe_allow_html=True)
 
 # Ticker strip — items duplicated so scroll loops seamlessly
 def build_ticker_items(df):
