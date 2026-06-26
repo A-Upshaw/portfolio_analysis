@@ -36,17 +36,15 @@ against live data using tool use.
 
 ## Project Structure
 
-```
-finance-data-platform/
-├── ingestion/        # Daily price fetcher and backfill script
-├── dbt/              # Staging models and portfolio marts
-├── api/              # FastAPI service
-├── dashboard/        # Streamlit portfolio dashboard
-├── analysis/         # Claude API portfolio analyzer
-├── schema/           # Database schema
-└── .github/
-    └── workflows/    # Automated daily pipeline
-```
+| Folder | What it does |
+|--------|-------------|
+| `ingestion/` | Daily price fetcher and backfill script |
+| `dbt/` | Staging models and portfolio marts |
+| `api/` | FastAPI service |
+| `dashboard/` | Streamlit portfolio dashboard |
+| `analysis/` | Claude API portfolio analyzer |
+| `schema/` | Database schema |
+| `.github/workflows/` | Automated daily pipeline |
 
 ---
 
