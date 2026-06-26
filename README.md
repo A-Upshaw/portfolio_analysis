@@ -36,6 +36,7 @@ against live data using tool use.
 
 ## Project Structure
 
+```
 finance-data-platform/
 ├── ingestion/        # Daily price fetcher and backfill script
 ├── dbt/              # Staging models and portfolio marts
@@ -45,7 +46,7 @@ finance-data-platform/
 ├── schema/           # Database schema
 └── .github/
     └── workflows/    # Automated daily pipeline
-
+```
 
 ---
 
