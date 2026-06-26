@@ -20,6 +20,7 @@ current_prices as(
 select
     p.account,
     s.company,
+    s.sector,
     p.ticker,
     cp.current_price,
     cp.price_date,
@@ -28,7 +29,7 @@ select
     round(p.shares * p.purchase_price,2) as cost_basis,
     round(p.shares * cp.current_price,2) as current_value,
     round((p.shares * cp.current_price) - (p.shares * p.purchase_price), 2) as unrealized_gain_loss,
-    round((cp.current_price - p.purchase_price)/ p.purchase_price * 100,2) as unrealized_gain_loss_pct 
+    round((cp.current_price - p.purchase_price)/ p.purchase_price * 100,2) as unrealized_gain_loss_pct
 from {{ ref('stg_portfolio') }} p
 left join current_prices cp on p.ticker = cp.ticker
 left join stocks s on p.ticker = s.ticker
