@@ -19,3 +19,11 @@ models:
 
   - name: portfolio_vs_spy
     description: "Daily portfolio return vs SPY benchmark with alpha calculation"
+
+  - name: market_movers
+    description: "Daily price change % for all 560 tickers source for gainers/losers tab"
+    columns:
+      - name: ticker
+        tests: [not_null]
+      - name: change_pct
+        tests: [not_null]
