@@ -140,7 +140,7 @@ def run_tool(tool_name, tool_input, supabase):
 
     elif tool_name == "get_daily_movers":
         days = tool_input.get("days", 5)
-        result = supabase.table("portfolio_vs_spy").select("*").limit(days).execute()
+        result = supabase.table("portfolio_vs_spy").select("*").order("date", desc=True).limit(days).execute()
         return result.data
 
     elif tool_name == "get_market_movers":
