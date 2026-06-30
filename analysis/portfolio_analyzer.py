@@ -16,6 +16,14 @@ Answer questions using only the data returned by your tools — never guess at n
 Be concise and specific. Lead with the key number, then explain.
 Today's date is {date}. Price data may be from the most recent trading day, which may not be today. """
 
+def add_user_messages(messages, text):
+    user_message = {"role": "user" , "content" : text}
+    messages.append(user_message)
+
+def add_assistant_message(messages, content):
+    assistant_message = {"role": "assistant", "content": content}
+    messages.append(assistant_message)
+
 tools = [
     {
         "name": "get_portfolio_summary",
@@ -208,9 +216,9 @@ def run_tool(tool_name, tool_input, supabase):
         return result
 
 
-def analyze(question: str) -> str:
+def analyze(question: str, messages: list) -> str:
     system = SYSTEM_PROMPT.format(date=date.today().isoformat())
-    messages = [{"role": "user", "content": question}]
+    add_user_messages(messages, question)
 
     while True:
         response = client.messages.create(
@@ -229,7 +237,7 @@ def analyze(question: str) -> str:
             return ""
 
         # Claude wants to call tools — execute each one
-        messages.append({"role": "assistant", "content": response.content})
+        add_assistant_message(messages, response.content)
 
         tool_results = []
         for block in response.content:
@@ -246,9 +254,12 @@ def analyze(question: str) -> str:
 
 if __name__ == "__main__":
     print("Portfolio Analyzer — ask anything about your holdings. Type 'quit' to exit.\n")
+
+    messages = []
+
     while True:
         question = input("You: ").strip()
         if question.lower() in ("quit", "exit", "q"):
             break
         if question:
-            analyze(question)
+            analyze(question, messages)

@@ -325,6 +325,9 @@ with tab1:
     st.markdown("---")
     st.subheader("Ask Your Portfolio Anything")
 
+    if "analyzer_messages" not in st.session_state:
+        st.session_state.analyzer_messages = []
+    
     if "messages" not in st.session_state:
         st.session_state.messages = []
 
@@ -338,7 +341,7 @@ with tab1:
             st.markdown(prompt)
         with st.chat_message("assistant"):
             with st.spinner("Analyzing..."):
-                response = analyze(prompt)
+                response = analyze(prompt, st.session_state.analyzer_messages)
             safe = re.sub(r'\$(\d)', r'\\$\1', response)
             st.markdown(safe)
         st.session_state.messages.append({"role": "assistant", "content": response})
