@@ -12,12 +12,21 @@ SUPABASE_KEY = os.environ['SUPABASE_KEY']
 POLYGON_API_KEY = os.environ['POLYGON_API_KEY']
 
 
-def get_last_trading_day():
-    """Return yesterday, or Friday if today is Monday (skips weekend)."""
+def get_target_dates():
+    """
+    Return list of dates to fetch.
+    Monday: fetch Friday (catch-up) + today (new data).
+    All other weekdays: just today.
+    Weekends: most recent Friday only.
+    """
     today = date.today()
-    if today.weekday() == 0:   # Monday → use Friday
-        return today - timedelta(days=3)
-    return today - timedelta(days=1)
+    if today.weekday() == 5:   # Saturday
+        return [today - timedelta(days=1)]
+    if today.weekday() == 6:   # Sunday
+        return [today - timedelta(days=2)]
+    if today.weekday() == 0:   # Monday — get Friday + today
+        return [today - timedelta(days=3), today]
+    return [today]
 
 
 def fetch_tickers(supabase):
@@ -74,31 +83,30 @@ def upsert_prices(supabase, rows):
 
 
 def main():
-    target_date = get_last_trading_day()
-    print(f'Date: {target_date}')
-
-    supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
-
+    supabase    = create_client(SUPABASE_URL, SUPABASE_KEY)
     our_tickers = fetch_tickers(supabase)
     print(f'Our universe: {len(our_tickers)} tickers')
 
-    polygon_results = fetch_polygon_prices(target_date)
-    print(f'Polygon returned: {len(polygon_results)} tickers')
+    for target_date in get_target_dates():
+        print(f'\n--- Fetching {target_date} ---')
 
-    if not polygon_results:
-        print('No results from Polygon — market may have been closed. Exiting.')
-        sys.exit(0)
+        polygon_results = fetch_polygon_prices(target_date)
+        print(f'Polygon returned: {len(polygon_results)} tickers')
 
-    rows = build_rows(polygon_results, our_tickers, target_date)
-    matched_tickers = {r['ticker'] for r in rows}
-    print(f'Matched our universe: {len(rows)} tickers')
+        if not polygon_results:
+            print('No results from Polygon — market may have been closed. Skipping.')
+            continue
 
-    upsert_prices(supabase, rows)
-    print(f'Upserted: {len(rows)} rows into price_history')
+        rows = build_rows(polygon_results, our_tickers, target_date)
+        matched_tickers = {r['ticker'] for r in rows}
+        print(f'Matched our universe: {len(rows)} tickers')
 
-    missing = our_tickers - matched_tickers
-    if missing:
-        print(f'No data for ({len(missing)} tickers): {sorted(missing)}')
+        upsert_prices(supabase, rows)
+        print(f'Upserted: {len(rows)} rows into price_history')
+
+        missing = our_tickers - matched_tickers
+        if missing:
+            print(f'No data for ({len(missing)} tickers): {sorted(missing)}')
 
 
 if __name__ == '__main__':
