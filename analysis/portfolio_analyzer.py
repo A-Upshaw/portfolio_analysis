@@ -62,6 +62,62 @@ tools = [
             },
             "required": []
         }
+    },
+    {
+        "name": "get_market_movers",
+        "description": "Returns the day's top gainers and losers across the full 560-ticker universe (not just portfolio holdings) — ticker, company, sector, close, change $, change %, volume. Use this for 'what's moving in the market today' type questions.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "direction": {
+                    "type": "string",
+                    "enum": ["gainers", "losers", "both"],
+                    "description": "Which side to return. Default 'both'."
+                },
+                "limit": {
+                    "type": "integer",
+                    "description": "How many tickers per side. Default 10."
+                },
+                "sector": {
+                    "type": "string",
+                    "description": "Optional: filter to a specific sector."
+                }
+            },
+            "required": []
+        }
+    },
+    {
+        "name": "get_market_news",
+        "description": "Returns recent news headlines, optionally filtered to a ticker. Use this for 'what's the news on X' or 'why did X move' type questions.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "ticker": {
+                    "type": "string",
+                    "description": "Optional: ticker symbol to filter news to (e.g. 'AAPL')."
+                },
+                "limit": {
+                    "type": "integer",
+                    "description": "How many articles to return. Default 10."
+                }
+            },
+            "required": []
+        }
+    },
+    {
+        "name": "get_economic_indicators",
+        "description": "Returns recent values for key macro indicators: Fed Funds Rate, CPI, GDP, Unemployment rate. Use this for macroeconomic / interest rate / inflation questions.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "indicator": {
+                    "type": "string",
+                    "enum": ["Fed Funds Rate", "CPI (Index)", "GDP ($B)", "Unemployment"],
+                    "description": "Optional: a single indicator to return. Omit to return all four."
+                }
+            },
+            "required": []
+        }
     }
 ]
 
@@ -86,6 +142,70 @@ def run_tool(tool_name, tool_input, supabase):
         days = tool_input.get("days", 5)
         result = supabase.table("portfolio_vs_spy").select("*").limit(days).execute()
         return result.data
+
+    elif tool_name == "get_market_movers":
+        direction = tool_input.get("direction", "both")
+        limit = tool_input.get("limit", 10)
+        sector = tool_input.get("sector")
+
+        query = supabase.table("market_movers").select("*")
+        if sector:
+            query = query.eq("sector", sector)
+        rows = query.execute().data
+
+        gainers = sorted(rows, key=lambda r: r["change_pct"], reverse=True)[:limit]
+        losers = sorted(rows, key=lambda r: r["change_pct"])[:limit]
+
+        if direction == "gainers":
+            return gainers
+        elif direction == "losers":
+            return losers
+        return {"gainers": gainers, "losers": losers}
+
+    elif tool_name == "get_market_news":
+        params = {
+            "apiKey": os.environ["POLYGON_API_KEY"],
+            "limit": tool_input.get("limit", 10),
+            "order": "desc",
+            "sort": "published_utc",
+        }
+        if tool_input.get("ticker"):
+            params["ticker.any_of"] = tool_input["ticker"]
+        resp = requests.get("https://api.polygon.io/v2/reference/news", params=params, timeout=10)
+        resp.raise_for_status()
+        articles = resp.json().get("results", [])
+        return [
+            {
+                "title": a.get("title"),
+                "publisher": a.get("publisher", {}).get("name"),
+                "tickers": a.get("tickers"),
+                "published_utc": a.get("published_utc"),
+                "url": a.get("article_url"),
+            }
+            for a in articles
+        ]
+
+    elif tool_name == "get_economic_indicators":
+        fred_key = os.environ["FRED_API_KEY"]
+        series_map = {
+            "Fed Funds Rate": ("FEDFUNDS", "%"),
+            "CPI (Index)": ("CPIAUCSL", ""),
+            "GDP ($B)": ("GDP", "$B"),
+            "Unemployment": ("UNRATE", "%"),
+        }
+        wanted = [tool_input["indicator"]] if tool_input.get("indicator") else list(series_map)
+
+        result = {}
+        for label in wanted:
+            series_id, unit = series_map[label]
+            resp = requests.get("https://api.stlouisfed.org/fred/series/observations", params={
+                "series_id": series_id, "api_key": fred_key, "file_type": "json", "limit": 6, "sort_order": "desc",
+            }, timeout=10)
+            resp.raise_for_status()
+            obs = [o for o in resp.json()["observations"] if o["value"] != "."]
+            obs.sort(key=lambda o: o["date"])
+            result[label] = {"unit": unit, "observations": obs}
+        return result
 
 
 def analyze(question: str) -> str:
