@@ -194,6 +194,32 @@ def backfill_ticker_prices(ticker, lookback_days=365):
         supabase.table("price_history").upsert(rows, on_conflict="ticker,date").execute()
     return len(rows)
 
+def add_portfolio_lot(ticker, account, shares, purchase_price, purchase_date):
+    ticker = ticker.upper().strip()
+    new_ticker_msg = ""
+
+    exists = supabase.table("stocks").select("ticker").eq("ticker", ticker).execute()
+    if not exists.data:
+        meta = fetch_ticker_metadata(ticker)
+        if meta is None:
+            return False, f"'{ticker}' not found on Polygon. Check the symbol and try again."
+        supabase.table("stocks").insert(meta).execute()
+        n = backfill_ticker_prices(ticker)
+        new_ticker_msg = f"Added {ticker} to the universe with {n} days of history. "
+
+    try:
+        supabase.table("portfolio").insert({
+            "ticker":         ticker,
+            "account":        account.strip(),
+            "shares":         float(shares),
+            "purchase_price": float(purchase_price),
+            "purchase_date":  purchase_date.isoformat(),
+        }).execute()
+        return True, f"{new_ticker_msg}Added {shares} shares of {ticker} at ${purchase_price:.2f} ({account})."
+    except Exception as e:
+        return False, f"Insert failed: {e}"
+
+
 
 summary  = load_summary()
 positions = pd.DataFrame(load_positions())
