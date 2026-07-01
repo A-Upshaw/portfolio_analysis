@@ -73,6 +73,16 @@ CREATE TABLE IF NOT EXISTS portfolio (
     purchase_date  DATE          NOT NULL
 );
 
+-- One row per sell transaction
+CREATE TABLE IF NOT EXISTS sales (
+    id          BIGSERIAL     PRIMARY KEY,
+    ticker      VARCHAR(20)   NOT NULL REFERENCES stocks(ticker),
+    account     TEXT          NOT NULL,
+    shares      NUMERIC(12,4) NOT NULL,
+    sale_price  NUMERIC(12,4) NOT NULL,
+    sale_date   DATE          NOT NULL
+);
+
 
 -- ============================================================
 --  QUICK REFERENCE: TABLE RELATIONSHIPS
