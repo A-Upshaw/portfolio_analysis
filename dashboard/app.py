@@ -5,6 +5,7 @@ import requests
 import streamlit as st
 import plotly.express as px
 import pandas as pd
+from datetime import date, timedelta, datetime
 from dotenv import load_dotenv
 from supabase import create_client
 
@@ -150,6 +151,24 @@ def load_indicators():
         obs.sort(key=lambda o: o["date"])
         result[label] = {"unit": unit, "observations": obs}
     return result
+
+def fetch_ticker_metadata(ticker):
+    resp = requests.get(
+        f"https://api.polygon.io/v3/reference/tickers/{ticker}",
+        params={"apiKey": os.environ["POLYGON_API_KEY"]},
+        timeout=10,
+    )
+    if resp.status_code == 404:
+        return None
+    resp.raise_for_status()
+    r = resp.json().get("results", {})
+    return {
+        "ticker":     ticker,
+        "company":    r.get("name", ticker),
+        "sector":     None,
+        "exchange":   r.get("primary_exchange"),
+        "asset_type": r.get("type"),
+    }
 
 summary  = load_summary()
 positions = pd.DataFrame(load_positions())
