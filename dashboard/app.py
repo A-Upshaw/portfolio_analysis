@@ -170,6 +170,31 @@ def fetch_ticker_metadata(ticker):
         "asset_type": r.get("type"),
     }
 
+def backfill_ticker_prices(ticker, lookback_days=365):
+    end   = date.today() - timedelta(days=1)
+    start = end - timedelta(days=lookback_days)
+    resp = requests.get(
+        f"https://api.polygon.io/v2/aggs/ticker/{ticker}/range/1/day/{start}/{end}",
+        params={"adjusted": "true", "sort": "asc", "limit": 500, "apiKey": os.environ["POLYGON_API_KEY"]},
+        timeout=30,
+    )
+    resp.raise_for_status()
+    rows = []
+    for r in resp.json().get("results", []):
+        rows.append({
+            "ticker": ticker,
+            "date":   datetime.utcfromtimestamp(r["t"] / 1000).strftime("%Y-%m-%d"),
+            "open":   r.get("o"),
+            "high":   r.get("h"),
+            "low":    r.get("l"),
+            "close":  r.get("c"),
+            "volume": int(r["v"]) if r.get("v") else None,
+        })
+    if rows:
+        supabase.table("price_history").upsert(rows, on_conflict="ticker,date").execute()
+    return len(rows)
+
+
 summary  = load_summary()
 positions = pd.DataFrame(load_positions())
 sectors   = pd.DataFrame(load_sector_exposure())
