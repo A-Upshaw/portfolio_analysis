@@ -18,6 +18,8 @@ sources:
         description: "Reference table: one row per ticker with sector and metadata"
       - name: portfolio
         description: "Your positions: one row per buy lot with cost basis"
+      - name: sales
+        description: "Sell transactions: one row per sale with ticker, shares, price, date"
 
 models:
   - name: stg_price_history
